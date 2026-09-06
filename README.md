@@ -1,160 +1,267 @@
 # AI-Based Sentiment & Emotion Detection System
 
-A dual-task NLP project that performs:
+A dual-task NLP classification system that predicts both the **emotion** expressed in text and the corresponding **sentiment polarity**. The project uses a classical supervised learning pipeline built around **TF-IDF feature engineering** and **Logistic Regression**, and exposes the workflow through a **Streamlit** interface.
 
-- **Emotion Detection** (6 classes): `sadness`, `joy`, `love`, `anger`, `fear`, `surprise`
-- **Sentiment Analysis** (3 classes): `positive`, `negative`, `neutral`
+## Live Demo
 
-Built using **TF-IDF + Logistic Regression** and deployed with **Streamlit**.
+Try the deployed app on Streamlit: https://ai-based-sentiment-emotion-detection-system-spt6xi6i5tdpzr6qub.streamlit.app/
 
----
+## Overview
 
-## 🚀 Live Demo
+This repository implements an applied NLP pipeline for two related but distinct text-classification tasks:
 
-👉 [Try the app on Streamlit](https://ai-based-sentiment-emotion-detection-system-spt6xi6i5tdpzr6qub.streamlit.app/)
+1. **Emotion classification** over 6 classes: `sadness`, `joy`, `love`, `anger`, `fear`, `surprise`
+2. **Sentiment classification** over 3 classes: `positive`, `negative`, `neutral`
 
----
+The project is intentionally scoped as a **classical machine-learning baseline** rather than a deep-learning or transformer-based system. It is useful for studying the effect of preprocessing, sparse lexical features, class imbalance handling, and supervised multiclass classification in a reproducible NLP workflow.
 
-## 📌 Problem Statement
+## Problem Formulation
 
-Understanding human text requires identifying both:
-1. The **emotion** being expressed, and  
-2. The overall **sentiment polarity**.
+**Input:** natural-language text
 
-This project demonstrates a practical end-to-end NLP pipeline that handles both tasks in one workflow.
+**Outputs:**
+- an emotion label
+- a sentiment label
 
----
+The implementation maps numeric emotion IDs to named emotion categories and then derives sentiment labels from those emotion categories using a rule-based mapping:
+- `joy` and `love` → `positive`
+- `sadness`, `anger`, and `fear` → `negative`
+- `surprise` → `neutral`
 
-## ✨ Key Features
+This sentiment formulation is a methodological choice in the current implementation and should be interpreted accordingly.
 
-- Dual-task text classification (emotion + sentiment)
-- Text preprocessing pipeline (regex cleaning, stopword removal, normalization)
-- TF-IDF feature extraction (unigrams + bigrams)
-- Logistic Regression models for both tasks
-- Validation using accuracy, classification report, and confusion matrix
-- Interactive/manual inference testing
-- Streamlit deployment for real-time predictions
+## Dataset
 
----
+The notebook/script reads three dataset files:
+- `training.csv.xls`
+- `validation.csv.xls`
+- `test.csv.xls`
 
-## 🧠 Learning Outcomes
+The source files are loaded with pandas and expected to contain at least the columns `text` and `label`. The label mapping used in the code is:
+- `0 -> sadness`
+- `1 -> joy`
+- `2 -> love`
+- `3 -> anger`
+- `4 -> fear`
+- `5 -> surprise`
 
-This project covers:
+The repository does not include dataset statistics or class-distribution summaries in the source files, so no counts or percentages are claimed here.
 
-- NLP preprocessing fundamentals
-- Multi-class classification setup
-- Feature engineering with TF-IDF
-- Performance evaluation and class-wise error analysis
-- Converting notebook experiments into reusable scripts
-- Basic ML model deployment with Streamlit
+## NLP Preprocessing
 
----
+The implementation applies the following text preprocessing steps:
+- convert text to lowercase
+- remove non-word characters with a regex-based cleaner while preserving `!` and `?`
+- tokenize by whitespace
+- remove English stopwords using NLTK
+- reconstruct cleaned text for downstream vectorization
 
-## 🛠️ Tech Stack
+The cleaned datasets are also written to CSV files during execution:
+- `train_cleaned.csv`
+- `val_cleaned.csv`
+- `test_cleaned.csv`
 
-- **Language:** Python
-- **Libraries:** `pandas`, `nltk`, `scikit-learn`, `matplotlib`
-- **ML Methods:** TF-IDF, Logistic Regression
-- **Deployment:** Streamlit
+## Feature Engineering
 
----
+Text is represented using **TF-IDF** via `TfidfVectorizer` with:
+- `max_features=5000`
+- `ngram_range=(1, 2)`
 
-## 📂 Repository Structure
+This creates a sparse lexical representation that captures both unigram and bigram signals, which is a strong baseline for short-text classification tasks where word choice and local phrase patterns can be informative.
+
+## Model Architecture
+
+The repository trains two separate supervised classifiers on the same TF-IDF feature space:
+
+### Emotion classifier
+- Model: `LogisticRegression(max_iter=1000, class_weight='balanced')`
+- Purpose: predict one of the 6 emotion classes
+- Note: class weighting is used here to mitigate class imbalance in the emotion task
+
+### Sentiment classifier
+- Model: `LogisticRegression(max_iter=1000)`
+- Purpose: predict one of the 3 sentiment classes
+
+Both models are classical linear classifiers trained on sparse TF-IDF features. This makes the system lightweight, interpretable, and well suited to a baseline comparison against more complex NLP approaches.
+
+## Experimental Workflow
+
+The implemented workflow is:
+
+1. Load training, validation, and test datasets
+2. Map numeric labels to emotion names
+3. Derive sentiment labels from emotion names
+4. Clean and normalize text
+5. Build TF-IDF features
+6. Train the emotion classifier
+7. Train the sentiment classifier
+8. Evaluate on validation data
+9. Run manual single-text inference
+10. Plot confusion matrices for error inspection
+
+## Evaluation
+
+The code computes the following evaluation outputs on the validation split:
+- accuracy
+- classification report
+- confusion matrix
+
+The repository does not store the numeric evaluation results in the README or source artifacts in a way that can be safely summarized here, so no metric values are fabricated.
+
+The notebook also includes confusion-matrix visualization for both tasks, which supports a basic form of class-wise error analysis.
+
+## Deployment
+
+The project is deployed as a Streamlit application for interactive inference.
+
+When a user enters text, the workflow is:
+1. clean the text with the same preprocessing function
+2. transform the text with the fitted TF-IDF vectorizer
+3. generate an emotion prediction
+4. generate a sentiment prediction
+5. display the results in the UI
+
+## System Workflow
+
+```text
+User Text
+↓
+Text Preprocessing
+↓
+TF-IDF Vectorization
+↓
+Emotion Classifier + Sentiment Classifier
+↓
+Predicted Emotion + Sentiment
+↓
+Streamlit Interface
+```
+
+## Technical Design Decisions
+
+- **TF-IDF** was chosen as a practical sparse representation for lexical text features.
+- **Logistic Regression** is a strong classical baseline for multiclass text classification.
+- **Separate classifiers** are used because emotion and sentiment are related but not identical prediction targets.
+- **Class weighting** is applied to the emotion model to help address imbalance across emotion classes.
+- **Streamlit** provides a simple interface for interactive testing and deployment.
+
+## Research & Engineering Relevance
+
+This is an **applied ML/NLP project**, not an academic research study. Its value for research-oriented review lies in the end-to-end experimentation workflow it demonstrates:
+- supervised text classification
+- sparse feature engineering
+- multiclass modeling
+- class imbalance handling
+- validation and error analysis
+- reproducible preprocessing and inference
+- lightweight model deployment
+
+## Limitations
+
+- TF-IDF does not model contextual semantics as effectively as transformer embeddings.
+- Performance depends on preprocessing choices and dataset quality.
+- Sentiment labels derived from emotion categories introduce a rule-based assumption and possible label noise.
+- Generalization may be limited outside the training distribution.
+- No transformer-based contextual encoder is used in the current implementation.
+
+## Future Improvements
+
+Possible next steps include:
+- compare TF-IDF + Logistic Regression against BERT, DistilBERT, or RoBERTa
+- perform hyperparameter optimization
+- add stratified k-fold cross-validation
+- explore alternative class-imbalance strategies
+- calibrate prediction confidence
+- add probability visualizations in the UI
+- conduct more systematic error analysis
+- test robustness on noisy or out-of-domain text
+- modularize preprocessing, training, and inference code
+- add a reproducible dependency file such as `requirements.txt`
+
+## Repository Structure
 
 ```text
 .
-├── NLP_Project_Sentiment_Analysis.ipynb      # Notebook: training + evaluation workflow
-├── nlp_project_sentiment_analysis.py         # Script: reproducible pipeline
+├── NLP_Project_Sentiment_Analysis.ipynb   # Notebook with data loading, preprocessing, training, evaluation, and manual testing
+├── nlp_project_sentiment_analysis.py      # Script version of the main NLP pipeline
 └── README.md
 ```
 
----
+## Running Locally
 
-## ⚙️ Workflow
+### 1) Clone the repository
 
-1. Load training / validation / test datasets  
-2. Map numeric emotion labels to class names  
-3. Derive sentiment labels from emotion labels  
-4. Clean and normalize text  
-5. Vectorize text with TF-IDF  
-6. Train models:
-   - Emotion classifier (class-weighted Logistic Regression)
-   - Sentiment classifier (Logistic Regression)
-7. Evaluate on validation data  
-8. Perform manual input testing  
-9. Visualize confusion matrices and class distributions
-
----
-
-## ▶️ Run Locally
-
-### 1) Clone repository
 ```bash
 git clone https://github.com/drishtichaudhary/ai-sentiment-emotion-analysis.git
 cd ai-sentiment-emotion-analysis
 ```
 
 ### 2) Install dependencies
+
 ```bash
 pip install pandas nltk scikit-learn matplotlib streamlit
 ```
 
-### 3) Run training/evaluation script
+### 3) Provide the dataset files
+
+Make sure the expected dataset files are available at the paths used in the notebook/script, or update those paths before running:
+- `training.csv.xls`
+- `validation.csv.xls`
+- `test.csv.xls`
+
+### 4) Run the training/evaluation pipeline
+
 ```bash
 python nlp_project_sentiment_analysis.py
 ```
 
-### 4) (Optional) Run Streamlit app
-```bash
-streamlit run app.py
-```
+### 5) Run the Streamlit app
 
-> **Note:** Update dataset paths in your script (e.g., `training.csv.xls`, `validation.csv.xls`, `test.csv.xls`) to match your local directory.
+If your local repository includes a Streamlit entry point, run it with the appropriate file name. The current repository contents shown here do not verify the presence of `app.py`.
 
----
+## Technologies / Skills Demonstrated
 
-## 📊 Example Output
+### NLP / Machine Learning
+- NLP preprocessing
+- TF-IDF feature engineering
+- Logistic Regression
+- multiclass classification
+- validation and classification reports
+- confusion-matrix-based error inspection
+- class imbalance handling
 
-For a given input sentence, the system predicts:
+### Python / Data Science
+- Python
+- pandas
+- NLTK
+- scikit-learn
+- matplotlib
 
-- **Emotion Class**
-- **Sentiment Class**
+### Deployment
+- Streamlit
 
-It also generates evaluation artifacts such as:
+### Engineering
+- reproducible ML workflow
+- data preprocessing
+- model evaluation
+- interactive inference
 
-- Accuracy scores
-- Classification reports
-- Confusion matrices
+## Outcome
 
----
+The project delivers a lightweight dual-task NLP system that predicts emotion and sentiment from text using classical supervised learning, with both notebook-based experimentation and a Streamlit-based application layer.
 
-## ⚠️ Current Limitations
+## Screenshots / Demonstration
 
-- Uses classical ML models (no contextual transformer embeddings)
-- Performance depends on preprocessing and dataset quality
-- Sentiment mapping via emotion labels may introduce label-noise assumptions
+_No screenshots are included in the repository at the moment._
 
----
+## Author
 
-## 🔮 Future Improvements
+Drishti Chaudhary
 
-- Upgrade to transformer-based models (BERT/RoBERTa/DistilBERT)
-- Add hyperparameter tuning + k-fold cross-validation
-- Improve class imbalance handling (resampling / focal loss alternatives)
-- Add confidence scores and probability distributions
-- Enhance Streamlit UI with analytics dashboard and prediction history
-- Package project with `requirements.txt` and modular code structure
+GitHub: https://github.com/drishtichaudhary
 
----
+LinkedIn: https://www.linkedin.com/in/drishti-chaudhary/
 
-## 👩‍💻 Author
+## License
 
-**Drishti Chaudhary**  
-GitHub: [@drishtichaudhary](https://github.com/drishtichaudhary)
-Linkedin: [Drishti Chaudhary](https://www.linkedin.com/in/drishti-chaudhary/)
----
-
-## 📄 License
-
-This project is open-source.  
-If you plan to share or reuse it publicly, consider adding an MIT License file.
+This repository does not currently include a LICENSE file in the source shown here. If you plan to reuse or distribute the project, consider adding an explicit license such as MIT.
